@@ -1,14 +1,32 @@
-import { Fragment, useContext, useState } from "react";
+import { Fragment, useCallback, useContext, useReducer, useState } from "react";
 import "./App.css";
 import DarkModeProvider, { DarkModeContext } from "./context/DarkModeContext";
+import todoReducer from "./reducer/todo-reducer";
 
 function App() {
+  const initialList = [
+    {
+      state: true,
+      title: "강의보기",
+    },
+    {
+      state: false,
+      title: "카페가기",
+    },
+    {
+      state: false,
+      title: "청소하기",
+    },
+  ];
+
+  const [todo, dispatch] = useReducer(todoReducer, initialList);
+
   return (
     <div className="App">
       <DarkModeProvider>
         <Header />
-        <List></List>
-        <InputTodo></InputTodo>
+        <List todo={todo} dispatch={dispatch}></List>
+        <InputTodo todo={todo} dispatch={dispatch}></InputTodo>
       </DarkModeProvider>
     </div>
   );
@@ -28,47 +46,27 @@ function Header() {
   );
 }
 
-const initialList = [
-  {
-    state: true,
-    title: "강의보기",
-  },
-  {
-    state: false,
-    title: "카페가기",
-  },
-  {
-    state: false,
-    title: "청소하기",
-  },
-];
-
-function List() {
-  // const { darkMode, toggleDarkMode } = useContext(DarkModeContext);
-
-  const [list, setList] = useState(initialList);
-  const handleChange = (e) => {
+function List({ todo, dispatch }) {
+  const handleChange = useCallback((e) => {
     const { name, checked } = e.target;
-    setList((prev) =>
-      prev.map((p, i) => (i == name ? { ...p, state: checked } : p))
-    );
-  };
-  const handleDelete = (index) => {
-    setList((prev) => prev.filter((p, i) => i !== index));
-  };
+    dispatch({ type: "update", index: Number(name), checked });
+  }, []);
+  const handleDelete = useCallback((index) => {
+    dispatch({ type: "delete", index });
+  }, []);
 
   return (
     <div className="list">
-      {list.map((todo, index) => (
+      {todo.map((v, index) => (
         <Fragment key={index}>
           <input
             type="checkbox"
             id={`chk${index}`}
             name={index}
-            checked={todo.state}
+            checked={v.state}
             onChange={handleChange}
           />
-          <label htmlFor={`chk${index}`}>{todo.title}</label>
+          <label htmlFor={`chk${index}`}>{v.title}</label>
           <button className="delete" onClick={() => handleDelete(index)}>
             {index} delete
           </button>
@@ -78,15 +76,14 @@ function List() {
   );
 }
 
-function InputTodo() {
-  const [list, setList] = useState(initialList);
+function InputTodo({ dispatch }) {
   const [title, setTitle] = useState("");
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { value } = e.target;
     setTitle(value);
   };
   const handleClick = () => {
-    setList((prev) => [...prev, { state: false, title }]);
+    dispatch({ type: "add", title });
   };
   return (
     <div className="input-todo">
